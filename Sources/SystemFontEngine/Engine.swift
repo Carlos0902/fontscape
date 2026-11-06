@@ -131,9 +131,12 @@ public enum SystemFontEngine {
             let actual = try plist(["info", "-plist", url.path])
             guard actual["VolumeUUID"] as? String == volume["VolumeUUID"] as? String,
                   actual["DeviceIdentifier"] as? String == device else { throw SystemFontError.refused("挂载系统卷身份不匹配。") }
-        } catch { try? fm.removeItem(at: url); throw error }
+        } catch { _ = try? command("/sbin/umount", [url.path]); _ = removeEmptyMountpoint(url); throw error }
         return (url, true)
     }
+    // Never use recursive file removal on a mountpoint. rmdir fails on a
+    // mounted or nonempty directory, including when unmount was unsuccessful.
+    static func removeEmptyMountpoint(_ url: URL) -> Bool { rmdir(url.path) == 0 }
     static func readRegular(_ url: URL) throws -> Data {
         let fd = open(url.path, O_RDONLY | O_NOFOLLOW)
         guard fd >= 0 else { throw SystemFontError.refused("无法读取普通文件：\(url.path)") }
@@ -182,7 +185,7 @@ public enum SystemFontEngine {
     }
     static func mutate(files: [FontFile], bytes: [Data], rollbackBytes: [Data], state: inout [String: Any], restoring: Bool) throws -> [String: Any] {
         let (mount, ownMount) = try mountedSystemVolume()
-        defer { if ownMount { _ = try? command("/sbin/umount", [mount.path]); try? fm.removeItem(at: mount) } }
+        defer { if ownMount { _ = try? command("/sbin/umount", [mount.path]); _ = removeEmptyMountpoint(mount) } }
         _ = try command("/sbin/mount", ["-uw", mount.path])
         let targets = files.map { mount.appendingPathComponent(String($0.target.dropFirst())) }
         // Validate every underlying file before changing any file.
