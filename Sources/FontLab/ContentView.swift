@@ -27,7 +27,7 @@ struct ContentView: View {
                 step("01", "进程内注册", "仅影响本应用", "checkmark.shield")
                 step("02", "兼容性检查", "原生检查 · 结果导出", "square.stack.3d.up")
                 step("03", "AppKit Hook", "仅限可控进程", "point.3.connected.trianglepath.dotted")
-                step("04", "系统卷研究", "仅隔离虚拟机实验", "lock.shield")
+                step("04", "全系统替换", "备份 · 快照 · 回滚", "lock.shield")
                 Spacer()
                 Text(model.systemDetails).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
                 Text(model.protection).font(.caption).foregroundStyle(.secondary)
@@ -90,13 +90,14 @@ struct ContentView: View {
                             .font(.callout).foregroundStyle(.secondary)
                         HStack { Text(model.lastResult).font(.caption); Spacer(); Button("打开报告", action: model.revealReports).disabled(model.reportURL == nil) }
                     }.padding(24).background(.background, in: RoundedRectangle(cornerRadius: 16))
+                    SystemFontView(font: model.selectedURL)
                     HStack(alignment: .top) {
                         Image(systemName: "info.circle").foregroundStyle(accent)
                         Text(model.message).font(.callout).textSelection(.enabled)
                         Spacer()
                         Button("恢复本应用", action: model.rollback).disabled(model.busy)
                     }
-                    Text("全系统替换目前仅在独立虚拟机验证。此公开版本提供字体预览、用户安装与应用内试用；高级系统卷实验请阅读仓库文档。")
+                    Text("全系统替换需管理员授权、手动准备 Recovery 和独立备份；实体 Mac 尚未验证。操作前请阅读应用内指引。")
                         .font(.caption).foregroundStyle(.secondary)
                 }.padding(32)
             }.background(Color(nsColor: .windowBackgroundColor))
