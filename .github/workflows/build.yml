@@ -1,0 +1,22 @@
+name: Build macOS app
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build, sign and verify universal app
+        run: zsh scripts/build-app.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Fontscape-macos-universal
+          path: |
+            dist/Fontscape-*.zip
+            dist/SHA256SUMS.txt
