@@ -90,7 +90,7 @@ def main():
         require(old.getBestCmap()==new.getBestCmap() and old.getGlyphOrder()==new.getGlyphOrder(), '生成后的字形映射不一致。')
     check.close();source.close();outlines.unlink();gc.collect()
     files=[{'target':p,'candidate':P(p).name,'sourceSHA256':h,'candidateSHA256':sha(output/P(p).name)} for p,h in zip(TARGETS,HASHES)]
-    report={'format':1,'osBuild':'25G83','architecture':'arm64','hanSpacing':spacing,'donorSHA256':sha(donor_path),'files':files,'faces':reports,
+    report={'format':1,'osBuild':'25G83','architecture':'arm64','hanSpacing':spacing,'donorSHA256':sha(donor_path),'donorPostScript':donor['name'].getDebugName(6) or donor_path.name,'files':files,'faces':reports,
       'limitations':'Static donor outlines for all weights; unmapped CJK glyphs use exported SC Regular; not every app uses these system fonts.'}
     (output/'manifest.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
     print('替换包已生成；尚未修改系统字体。',flush=True)

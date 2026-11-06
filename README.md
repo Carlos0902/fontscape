@@ -6,7 +6,7 @@
 
 ## 下载
 
-前往 [Releases](https://github.com/Carlos0902/fontscape/releases)，下载 Universal ZIP，解压后将 `Fontscape.app` 拖入“应用程序”。预览与用户字体功能支持 macOS 14+；Intel 仅完成交叉构建，系统替换不支持 Intel。
+前往 [v0.3.0-beta.2](https://github.com/Carlos0902/fontscape/releases/tag/v0.3.0-beta.2)，下载 Universal ZIP，解压后将 `Fontscape.app` 拖入“应用程序”。预览与用户字体功能支持 macOS 14+；Intel 仅完成交叉构建，系统替换不支持 Intel。
 
 - 不需要安装 Python、Homebrew 或 Xcode。系统字体构建器内置离线 CPython 与 fontTools。
 - 目前是 ad-hoc 签名，没有 Developer ID 签名和 Apple 公证。核对 Release 来源与 SHA256；首次被 Gatekeeper 阻止时，按 macOS 正常流程在“系统设置 → 隐私与安全性”选择“仍要打开”。不要关闭 Gatekeeper。组织管理策略可能不允许打开。
@@ -20,9 +20,9 @@
 1. **准备恢复来源**：虚拟机先保留可启动的关机克隆；实体 Mac 先做独立可恢复的整机备份。应用的两个字体备份不能代替整机恢复。
 2. **生成替换包**：导入同时包含中文和西文的单字体 TrueType TTF，滚动至“全系统字体替换”。刷新并核对当前设备、`arm64` 和 `25G83`，设置汉字间距（默认从原始宽度增加 **6% em**），点击“用当前字体生成替换包”。此步骤不修改系统文件，可能持续数分钟并需数 GB 临时空间。
 3. **手动准备 Recovery**：严格在目标测试系统的恢复环境中，按指引调整 SIP 与 authenticated-root；回到目标系统刷新状态。应用不会自动关闭保护或改变安全启动策略。两项未明确 disabled 时不能应用。
-4. **备份并应用**：点击“备份并应用替换包”，阅读确认框、确认独立备份、输入“替换”，完成 macOS 管理员授权。引擎保存并校验原始字体、记录系统卷 UUID，再写入并创建快照。
+4. **备份并应用**：点击“备份并应用替换包”，阅读确认框、确认独立备份、输入“替换”或 `apply`，完成 macOS 管理员授权。引擎保存并校验原始字体、记录系统卷 UUID，再写入并创建快照。
 5. **确认生效**：`installPrepared` 只表示快照准备完成。完全关机再启动，重新打开应用并刷新，确认“本次启动字体哈希已核验”，再检查实际界面。
-6. **回滚**：在同一系统卷内点“恢复原始系统字体”，输入“回滚”并授权。出现 `rollbackPrepared` 后完全关机再启动、刷新核验。核验通过后才能“归档已验证的回滚”；归档会保留备份。
+6. **回滚**：在同一系统卷内点“恢复原始系统字体”，输入“回滚”或 `rollback`并授权。出现 `rollbackPrepared` 后完全关机再启动、刷新核验。核验通过后才能“归档已验证的回滚”；归档会保留备份。
 
 备份和事务记录位于 `/Library/Application Support/Fontscape/SystemFonts/`，由 root 管理。不要手动删除、编辑或用于其他系统卷。系统更新前先回滚并核验；更新后本版可能拒绝旧替换包。
 
@@ -62,7 +62,7 @@ zsh scripts/build-app.sh
 open dist/Fontscape.app
 ```
 
-生成 `dist/Fontscape-0.3.0-beta.1-macos-universal.zip` 与 `SHA256SUMS.txt`。打包脚本核验三个原生可执行文件、签名、内置运行时及说明文档；GitHub Actions 也执行这些检查。系统构建器只在 arm64 使用，其内置 Python 为 arm64。
+生成 `dist/Fontscape-0.3.0-beta.2-macos-universal.zip` 与 `SHA256SUMS.txt`。打包脚本核验三个原生可执行文件、签名、内置运行时及说明文档；GitHub Actions 也执行这些检查。系统构建器只在 arm64 使用，其内置 Python 为 arm64。
 
 运行只读状态检查：
 

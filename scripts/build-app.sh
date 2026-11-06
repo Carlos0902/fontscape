@@ -30,7 +30,7 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>0.3.0</string>
-<key>CFBundleVersion</key><string>2</string>
+<key>CFBundleVersion</key><string>3</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
 </dict></plist>
@@ -44,7 +44,7 @@ codesign --verify --deep --strict "$app"
 # Copy into a clean destination; no resources from earlier builds survive.
 rm -rf "$PWD/dist/Fontscape.app"
 mv "$app" "$PWD/dist/Fontscape.app"
-archive="Fontscape-0.3.0-beta.1-macos-universal.zip"
+archive="Fontscape-0.3.0-beta.2-macos-universal.zip"
 rm -f "$PWD/dist/$archive"
 ditto -c -k --sequesterRsrc --keepParent "$PWD/dist/Fontscape.app" "$PWD/dist/$archive"
 (cd dist && shasum -a 256 "$archive" > SHA256SUMS.txt)

@@ -5,12 +5,20 @@ import SystemFontEngine
 @MainActor final class SystemModel: ObservableObject {
     @Published var state: [String: Any] = [:]
     @Published var busy = false
-    @Published var log = "尚未检查系统。"
+    @Published var log = "操作日志显示在这里。"
     @Published var packageURL: URL?
     @Published var spacing = 6.0
     @Published var showGuide = false
     private let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Fontscape/SystemPackages", isDirectory: true)
     private var executableDirectory: URL { Bundle.main.executableURL!.deletingLastPathComponent() }
+    var packageSummary: String {
+        guard let url = packageURL,
+              let data = try? Data(contentsOf: url.appendingPathComponent("manifest.json")),
+              let value = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let percent = value["hanSpacing"] as? Double else { return "替换包信息不可读，请重新载入。" }
+        let name = value["donorPostScript"] as? String ?? "来源 SHA256 " + String((value["donorSHA256"] as? String ?? "未知").prefix(16))
+        return "包内字体：\(name) · 汉字字距 +\(Int((percent * 100).rounded()))% em"
+    }
     var supported: Bool { state["supported"] as? Bool == true }
     var ready: Bool { state["protectionsReady"] as? Bool == true }
     var transaction: [String: Any]? { state["transaction"] as? [String: Any] }
@@ -62,18 +70,25 @@ import SystemFontEngine
         execute(python, args: ["-B", "-s", script.path, font.path, output.path, String(spacing / 100), executableDirectory.appendingPathComponent("fontlab-probe").path], environment: environment) { success in
             if success {
                 self.packageURL = output; UserDefaults.standard.set(output.path, forKey: "systemFontPackage")
-                self.log += "\n可点击应用替换包。构建没有修改系统文件。"
+                self.log = "替换包已生成，尚未写入系统字体。可点击应用替换包。\n" + self.log
             }
         }
     }
     private func confirmation(restoring: Bool) -> Bool {
         let verb = restoring ? "回滚" : "替换"
+        let keyword = restoring ? "rollback" : "apply"
         let alert = NSAlert(); alert.alertStyle = .warning; alert.messageText = "\(verb)当前启动系统的字体"
-        alert.informativeText = "这会写入 SFNS 与 PingFang UI，并创建启动快照。实体 Mac 尚未验证，失败可能无法启动。继续前必须有独立的整机备份或可启动的虚拟机检查点；字体备份不能代替整机恢复。\n\n输入“\(verb)”确认，随后由 macOS 请求管理员授权。完成后需要完全关机再启动。"
-        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 360, height: 24)); field.placeholderString = "输入\(verb)"
+        alert.informativeText = "这会写入 SFNS 与 PingFang UI，并创建启动快照。实体 Mac 尚未验证，失败可能无法启动。继续前必须有独立的整机备份或可启动的虚拟机检查点；字体备份不能代替整机恢复。\n\n输入“\(verb)”或“\(keyword)”确认，随后由 macOS 请求管理员授权。完成后需要完全关机再启动。"
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 360, height: 24)); field.placeholderString = "\(verb) / \(keyword)"
         alert.accessoryView = field; alert.addButton(withTitle: "继续\(verb)"); alert.addButton(withTitle: "取消")
         alert.showsSuppressionButton = true; alert.suppressionButton?.title = "我已准备好独立整机备份或关机检查点"
-        return alert.runModal() == .alertFirstButtonReturn && field.stringValue == verb && alert.suppressionButton?.state == .on
+        guard alert.runModal() == .alertFirstButtonReturn else { return false }
+        let text = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard (text == verb || text.lowercased() == keyword), alert.suppressionButton?.state == .on else {
+            log = "未执行\(verb)：请勾选备份确认，并输入“\(verb)”或“\(keyword)”。"
+            return false
+        }
+        return true
     }
     func apply() {
         guard !busy, supported, ready, let packageURL, confirmation(restoring: false) else { return }
@@ -93,7 +108,7 @@ import SystemFontEngine
         let literal = command.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
         execute(URL(fileURLWithPath: "/usr/bin/osascript"), args: ["-e", "do shell script \"\(literal)\" with administrator privileges"], environment: nil) { success in
             self.refresh()
-            if success { self.log += args.first == "archive" ? "\n备份已保留并归档。" : "\n启动快照已准备。请完全关机再启动，打开应用并刷新状态；看到本次启动核验通过后才算生效。" }
+            if success { self.log = (args.first == "archive" ? "备份已保留并归档。" : "启动快照已准备。请完全关机再启动，打开应用并刷新状态；看到本次启动核验通过后才算生效。") + "\n" + self.log }
         }
     }
     private func execute(_ url: URL, args: [String], environment: [String: String]?, completion: @escaping (Bool) -> Void) {
@@ -111,7 +126,7 @@ import SystemFontEngine
                     DispatchQueue.main.async { self.log = String((self.log + "\n" + text).suffix(10000)) }
                 }
                 process.waitUntilExit(); let success = process.terminationStatus == 0
-                DispatchQueue.main.async { FontscapeWork.pendingSystemOperations -= 1; self.busy = false; if !success { self.log += "\n操作未完成，请保留日志与备份。" }; completion(success) }
+                DispatchQueue.main.async { FontscapeWork.pendingSystemOperations -= 1; self.busy = false; self.log = (success ? "操作已完成。\n" : "操作未完成，请保留日志与备份。\n") + self.log.replacingOccurrences(of: "操作进行中，请勿关机或退出应用…", with: ""); completion(success) }
             } catch { DispatchQueue.main.async { FontscapeWork.pendingSystemOperations -= 1; self.busy = false; self.log = error.localizedDescription; completion(false) } }
         }
     }

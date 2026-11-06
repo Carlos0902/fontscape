@@ -25,6 +25,7 @@ struct SystemFontView: View {
                 .font(.caption).foregroundStyle(.secondary)
             if let url = model.packageURL {
                 HStack { Text("替换包：\(url.lastPathComponent)").font(.caption); Button("显示文件", action: model.revealPackage) }
+                Text(model.packageSummary).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
             }
             HStack {
                 Button("备份并应用替换包…", action: model.apply).disabled(model.packageURL == nil || !model.supported || !model.ready || model.busy || model.transaction != nil)
